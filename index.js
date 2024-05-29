@@ -53,6 +53,33 @@ const getLocaleSummary = async (url) => {
     }
 }
 
+const getReachability = async (url) => {
+
+    try{
+
+        const { data } = await axios.get(url)
+        const $ = cheerio.load(data)
+
+        const reachabilityTable = '#guidelineTable_c4 > div > div > table > tbody'
+        const reachability = []
+
+        $(reachabilityTable).find('tr').each((index, row) => {
+
+            reachability.push({
+                [($(row).find('td:nth-child(1)').text()).trim()]:{inbound:$(row).find('td:nth-child(2)').text().trim(), outbound:$(row).find('td:nth-child(3)').text().trim()}
+            })
+
+        })
+
+        return reachability
+
+    }catch (error) {
+        console.error(`Error: ${error}`)
+    }
+}
+
 const countries = getCountriesFromURL('https://www.twilio.com/en-us/guidelines/voice')
 
 const localeSummary = getLocaleSummary('https://www.twilio.com/en-us/guidelines/ar/voice')
+
+const reachability = getReachability('https://www.twilio.com/en-us/guidelines/ar/voice')
