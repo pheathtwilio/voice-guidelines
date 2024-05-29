@@ -1,174 +1,34 @@
-const axios = require('axios')
-const cheerio = require('cheerio')
+const express = require('express')
+const http = require('http')
+const bodyParser = require('body-parser')
+const dotenv = require("dotenv")
+dotenv.config()
 
-const getCountriesFromURL = async (url) => {
+const { getCountriesFromURL } = require('./countries')
 
-    try {
-        const { data } = await axios.get(url)
-        const $ = cheerio.load(data)
-        const countries = []
+// getCountriesFromURL('https://www.twilio.com/en-us/guidelines/voice')
 
-        const guidelineCountryList = '#guidelineCountryList > div > div.grid-container.three-columns.default.medium-gap'
+const app = express()
+const server = http.createServer(app)
 
-        $(guidelineCountryList).children().each((index, element) => {
+app.use(express.static("public/"))
+app.use(bodyParser.json())
 
-            var country = {
-                name: $(element).children('div').children('div').children('h4').text().trim(),
-                link: $(element).children('div').children('a').attr('href')
-            }
+app.get("/", (req, res) => {
+  res.sendFile(__dirname + "/public/index.html")
+})
 
-            countries.push(country)
+app.post("/getCountries", async (req, res) => {
 
-        })
+    const countries = await getCountriesFromURL(req.body.url)
 
-        return countries
-
-    } catch (error) {
-        console.error(`Error: ${error}`)
+    const response = {
+        countries: countries
     }
-}
 
-const getLocaleSummary = async (url) => {
+    res.json(response)
+})
 
-    try{
-
-        const { data } = await axios.get(url)
-        const $ = cheerio.load(data)
-
-        const localeSummaryTable = '#guideline-tables > div > div:nth-child(1) > div > div > table > tbody'
-        const localeSummary = []
-
-        $(localeSummaryTable).find('tr').each((index, row) => {
-
-            localeSummary.push({
-                [($(row).find('td:nth-child(1)').text()).trim()]:($(row).find('td:nth-child(2)').text()).trim()
-            })
-
-        })
-
-        return localeSummary
-
-    }catch (error) {
-        console.error(`Error: ${error}`)
-    }
-}
-
-const getReachability = async (url) => {
-
-    try{
-
-        const { data } = await axios.get(url)
-        const $ = cheerio.load(data)
-
-        const reachabilityTable = '#guidelineTable_c4 > div > div > table > tbody'
-        const reachability = []
-
-        $(reachabilityTable).find('tr').each((index, row) => {
-
-            reachability.push({
-                [($(row).find('td:nth-child(1)').text()).trim()]:{inbound:$(row).find('td:nth-child(2)').text().trim(), outbound:$(row).find('td:nth-child(3)').text().trim()}
-            })
-
-        })
-
-        return reachability
-
-    }catch (error) {
-        console.error(`Error: ${error}`)
-    }
-}
-
-const getCallerID = async (url) => {
-
-    try{
-
-        const { data } = await axios.get(url)
-        const $ = cheerio.load(data)
-
-        const callerTable = '#guideline-tables > div > div:nth-child(3) > div > div > table > tbody'
-        const callerids = []
-
-        $(callerTable).find('tr').each((index, row) => {
-
-            callerids.push({
-                [($(row).find('td:nth-child(1)').text()).trim()]:{inbound:$(row).find('td:nth-child(2)').text().trim(), outbound:$(row).find('td:nth-child(3)').text().trim()}
-            })
-
-        })
-
-        console.log(callerids)
-
-        return callerids
-
-    }catch (error) {
-        console.error(`Error: ${error}`)
-    }
-}
-
-const getDTMF = async (url) => {
-
-    try{
-
-        const { data } = await axios.get(url)
-        const $ = cheerio.load(data)
-
-        const dtmfTable = '#guideline-tables > div > div:nth-child(4) > div > div > table > tbody'
-        const dtmfs = []
-
-        $(dtmfTable).find('tr').each((index, row) => {
-
-            dtmfs.push({
-                [($(row).find('td:nth-child(1)').text()).trim()]:($(row).find('td:nth-child(2)').text()).trim()
-            })
-
-        })
-
-        console.log(dtmfs)
-
-        return dtmfs
-
-    }catch (error) {
-        console.error(`Error: ${error}`)
-    }
-}
-
-const getEmergencyCalling = async (url) => {
-
-    try{
-
-        const { data } = await axios.get(url)
-        const $ = cheerio.load(data)
-
-        const emergencyCallingTable = '#guideline-tables > div > div:nth-child(5) > div > div > table > tbody'
-        const emergencies = []
-
-        $(emergencyCallingTable).find('tr').each((index, row) => {
-
-            emergencies.push({
-                [($(row).find('td:nth-child(1)').text()).trim()]:($(row).find('td:nth-child(2)').text()).trim()
-            })
-
-        })
-
-        console.log(emergencies)
-
-        return emergencies
-
-    }catch (error) {
-        console.error(`Error: ${error}`)
-    }
-}
-
-
-
-const countries = getCountriesFromURL('https://www.twilio.com/en-us/guidelines/voice')
-
-const localeSummary = getLocaleSummary('https://www.twilio.com/en-us/guidelines/ar/voice')
-
-const reachability = getReachability('https://www.twilio.com/en-us/guidelines/ar/voice')
-
-const callerids = getCallerID('https://www.twilio.com/en-us/guidelines/ar/voice')
-
-const dtmfs = getDTMF('https://www.twilio.com/en-us/guidelines/ar/voice')
-
-const emergencies = getEmergencyCalling('https://www.twilio.com/en-us/guidelines/ar/voice')
+server.listen(process.env.PORT, () => {
+    console.log('listening on http://localhost:' + process.env.PORT)
+})
